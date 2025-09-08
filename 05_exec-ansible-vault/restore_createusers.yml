@@ -1,0 +1,12 @@
+---
+- name: 사용자 제거
+  hosts: all
+  vars_files:
+      - vars/secret.yml
+  tasks:
+    - name: Secret 사용한 사용자 제거
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        state: absent
+        remove: yes
+      loop: "{{ newusers }}"

@@ -1,0 +1,7 @@
+---
+- name: 종료 프로그램 시작
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: 사용자 서버 종료
+      ansible.builtin.command: shutdown -h now

@@ -1,0 +1,45 @@
+---
+- name: 0) 작업 제어 실습
+  hosts: webservers
+  gather_facts: true
+  vars_files:
+    - vars/vars.yml
+  tasks:
+    ##############################################
+    # 0) 점검 - MEM > 256, 배포판: CentOS9
+    # 1) 패키지 설치 - httpd, mod_ssl, firewalld
+    # 2) 서비스 기동 - httpd, firewalld
+    # 3) 웹 서버 설정(notify)
+    #   * /etc/pki/tls/certs/localhost.crt
+    #   * /etc/pki/tls/private/localhost.key
+    #   * /var/www/html/index.html
+    # 4) 방화벽 포트 등록 - http, https
+    # 5) handlers 정의
+    ##############################################
+    
+
+    - name: 1) 방화벽 포트 해제 - http, https
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        permanent: false
+        immediate: false
+        state: disabled
+      loop: "{{ firewall_rules }}"
+
+    - name: 2) 웹 서버 설정 제거(notify)
+      ansible.builtin.file:
+        path: "{{ item.dest }}"
+        state: absent
+      loop: "{{ web_config_files }}"
+
+    - name: 3) 서비스 정지 - {{ services }}
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: stopped
+        enabled: false
+      loop: "{{ services }}"
+
+    - name: 4) 패키지 제거 - {{ packages }}
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: present

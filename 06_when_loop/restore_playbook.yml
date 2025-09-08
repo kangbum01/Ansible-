@@ -1,0 +1,29 @@
+---
+- name: Play 01 - DB 서비스 정지
+  hosts: database_dev
+  vars:
+    packages:
+      - mariadb
+      - mariadb-server
+      - python3-PyMySQL
+    service: mariadb.service
+  tasks:
+    #################################################
+    # 1) 서비스 중지 - mariadb
+    # 2) 패키지 제거 - mariadb, mariadb-server, python3-PyMySQL
+    #################################################
+      
+    - name: 1) 서비스 중지 - mariadb
+      ansible.builtin.systemd:
+        name: "{{ service }}"
+        state: stopped
+        enabled: false
+
+    - name: 2) 패키지 제거
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: absent
+      loop: "{{ packages }}"
+      when: ansible_distribution == "CentOS"
+
+

@@ -1,0 +1,53 @@
+---
+##############################
+# Play 01 - 웹 서버 구축
+# 1) 패키지 설치 - httpd, mod_ssl, firewalld, python3-PyMySQL
+# 2) 서비스 설정 - /var/www/html/index.html
+# 3) 서비스 기동 - httpd, firewalld
+# 4) 방화벽에 등록 - http, https
+# Play 02 - 웹 요청 확인
+# 1) 웹 요청 - http://192.168.10.11/
+# 2) 웹 출력 확인
+##############################
+- name: Play 01 - 웹 서버 제거
+  hosts: all
+  vars:
+   pkg_http_web: httpd
+   pkg_https_web: mod_ssl
+   pkg_fw: firewalld
+   pkg_python: python3-PyMySQL
+   basedir: /var/www/html
+   indexfile: "{{ basedir }}/index.html"
+   svc_web: httpd
+   svc_fw: firewalld
+   fw_80: http
+   fw_8080: https
+  tasks:
+   - name: 1) 방화벽에 해제 - {{ fw_80 }}, {{ fw_8080 }} # noqa name[template]
+     ansible.posix.firewalld:
+      service: "{{ item }}"
+      permanent: false
+      immediate: false
+      state: disabled
+     loop:
+      - "{{ fw_80 }}"
+      - "{{ fw_8080 }}"
+   - name: 2) 서비스 중지 - {{ svc_web }}, {{ svc_fw }} # noqa name[template]
+     ansible.builtin.systemd:
+      name: "{{ item }}"
+      state: stopped
+      enabled: false
+     loop:
+      - "{{ svc_web }}"
+      - "{{ svc_fw }}"
+   - name: 3) 서비스 제거 - {{ indexfile }}
+     ansible.builtin.file:
+      path: "{{ indexfile }}"
+      state: absent
+   - name: 4) 패키지 제거 - {{ pkg_http_web }}, {{ pkg_https_web }}, {{ pkg_python }} # noqa name[template]
+     ansible.builtin.dnf:
+      name:
+       - "{{ pkg_http_web }}"
+       - "{{ pkg_https_web }}"
+       - "{{ pkg_python }}"
+      state: absent

@@ -1,0 +1,108 @@
+---
+########################################
+# Play 01: .htaccess 파일 사용하는 웹서버 구축
+# * (ㄱ) 패키지 설치
+# * (ㄴ) 서비스 설정
+#   - /etc/httpd/conf/httpd.conf(AllowOveride AuthConfig)
+#   - /var/www/html/.htaccess
+#   - /etc/httpd/secrets/htpasswd
+#   - /var/www/html/index.html
+# * (ㄷ) 서비스 기동
+# * (ㄹ) 방화벽 등록
+# Play 02: 웹 요청
+########################################
+- name: 고급 웹서버 구축
+  hosts: ansible1.example.com
+  vars:
+    firewall_pkg: firewalld
+    web_pkg: httpd
+    ssl_pkg: mod_ssl
+    web_dest: /var/www/html
+    hta_src: files/.htaccess
+    conf_src: files/httpd.conf
+    conf_dest: /etc/httpd/conf/httpd.conf
+    htpw_src: files/htpasswd
+    htpw_dest: /etc/httpd/secrets/
+  tasks:
+    - name: 1. 패키지 설치
+      ansible.builtin.dnf:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - "{{ firewall_pkg }}"
+        - "{{ ssl_pkg }}"
+        - "{{ web_pkg }}"
+    
+    - name: 2.서비스 설정 - .htaccess
+      ansible.builtin.copy:
+        src: "{{ hta_src }}"
+        dest: "{{ web_dest }}"
+        owner: root
+        group: root
+        mode: '0644'
+    - name: 2. 서비스 설정 - httpd.conf
+      ansible.builtin.copy:
+        src: "{{ conf_src }}"
+        dest: "{{ conf_dest }}"
+        owner: root
+        group: root
+        mode: '0644'
+    - name: 2-1. 서비스 설정(폴더 생성) - htpasswd
+      ansible.builtin.file:
+        path: "{{ htpw_dest }}"
+        state: directory
+        mode: '0755'
+
+    - name: 2-2. 서비스 설정(파일 복사) - htpasswd
+      ansible.builtin.copy:
+        src: "{{ htpw_src }}"
+        dest: "{{ htpw_dest }}"
+        owner: root
+        group: root
+        mode: '0644'
+    
+    - name: 2. 서비스 설정 - index.html
+      ansible.builtin.copy:
+        content: |
+          <pre>
+          Hostname - {{ ansible_hostname }}
+          IP = {{ ansible_all_ipv4_addresses }}
+          </pre>
+        dest: "{{ web_dest }}/index.html"
+        mode: '0644'
+    - name: 3. 서비스 기동 - httpd, firewalld
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - "{{ firewall_pkg }}"
+        - "{{ web_pkg }}"
+    - name: 4. 방화벽 등록
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        permanent: true
+        immediate: true
+        state: enabled
+      loop:
+        - http
+        - https 
+
+- name: 웹 요청
+  hosts: localhost
+  vars:
+    url: "http://192.168.10.11"
+  tasks:
+    - name: 웹 서버 연결
+      ansible.builtin.uri:
+        url: "{{ url }}"
+        return_content: true
+        user: "guest"
+        password: "soldesk1."
+        force_basic_auth: true
+        status_code:
+          - 200
+      register: output
+    - name: 웹 서버 실행
+      ansible.builtin.debug:
+        var: output

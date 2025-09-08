@@ -1,0 +1,14 @@
+---
+- name: 인벤토리 변수 테스트 - 제거
+  hosts: all
+  tasks:
+    - name: 패키지 제거 - {{ packages }}
+      ansible.builtin.yum:
+       name: "{{ packages }}"
+       state: absent
+      vars: 
+        packages:
+          - httpd
+          - mariadb-server
+          - php
+          - mutt

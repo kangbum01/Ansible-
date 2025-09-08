@@ -1,0 +1,17 @@
+---
+- name: Demo Web
+  hosts: all
+  roles:
+    - kangbum01.restoreweb
+  vars:
+    fw_svcs: 
+      - http
+      - https
+    svcs:
+      - httpd
+    files:
+      - /etc/httpd/conf.d/vhost.conf
+      - /var/www/vhost
+    pkgs:
+      - httpd
+      - mode_ssl

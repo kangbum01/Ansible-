@@ -1,0 +1,27 @@
+---
+- name: Restore_intranet
+  hosts: all
+  tasks:
+    - name: 1) 방화벽 등록 - http
+      ansible.posix.firewalld:
+        service: http
+        permanent: true
+        immediate: true
+        state: disabled
+    - name: 2) 서비스 중지 - (service, firewalld) httpd, firewalld
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: stopped
+        enabled: false
+      loop:
+        - httpd
+        - firewalld
+    - name: 3) 서비스 삭제 - (file) /var/www/html/index.html
+      ansible.builtin.file:
+        path: /var/www/html/index.html
+        state: absent
+
+    - name: 4) 패키지 삭제 - httpd
+      ansible.builtin.dnf:
+        name: httpd
+        state: absent
